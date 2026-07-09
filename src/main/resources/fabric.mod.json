@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "mcef-modern-html",
+  "version": "${version}",
+  "name": "HTML UI (MCEF Modern)",
+  "description": "用网页技术做 Minecraft 交互界面的模组。客户端内嵌 Chromium 146 内核，HTML5/CSS3/JS 全套支持，5 种 URL 协议覆盖所有交互。",
+  "authors": [
+    "逸致slom",
+    "DimasKama (MCEF Modern 原作者, LGPL-2.1)"
+  ],
+  "contact": {
+    "homepage": "https://github.com/逸致slom/html-ui",
+    "sources": "https://github.com/逸致slom/html-ui",
+    "issues": "https://github.com/逸致slom/html-ui/issues"
+  },
+  "license": "LGPL-2.1",
+  "icon": "assets/mcef-modern/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "preLaunch": [
+      "net.dimaskama.mcef.impl.MCEFModernPreLaunch"
+    ],
+    "client": [
+      "net.dimaskama.mcef.impl.MCEFModern",
+      "com.htmlui.client.HtmlUiClientMod"
+    ],
+    "server": [
+      "com.htmlui.server.HtmlUiServerMod"
+    ],
+    "modmenu": [
+      "com.htmlui.client.config.ModMenuIntegration"
+    ]
+  },
+  "depends": {
+    "minecraft": ">=${minecraft_version}",
+    "fabricloader": ">=0.19.3",
+    "fabric-api": ">=${fabric_version}",
+    "java": ">=25"
+  }
+}

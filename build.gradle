@@ -1,0 +1,222 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+    id "com.modrinth.minotaur" version "2.+"
+}
+
+version = project.mod_version + "+mc" + project.minecraft_version + ".jcef" + project.jcef_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+sourceSets {
+    testmod {
+        compileClasspath += main.compileClasspath
+        runtimeClasspath += main.runtimeClasspath
+    }
+}
+
+loom {
+    mods {
+        "mcef-modern" {
+            sourceSet sourceSets.main
+        }
+        testmod {
+            sourceSet sourceSets.testmod
+        }
+    }
+
+    runs {
+        testmodClient {
+            client()
+            name = "Test Mod Client"
+            source sourceSets.testmod
+        }
+    }
+
+    runConfigs.configureEach {
+        ideConfigGenerated = true
+    }
+}
+
+repositories {
+    maven {
+        name = "ModMenu"
+        url = "https://maven.terraformersmc.com/"
+    }
+}
+
+configurations {
+    jcefNatives
+}
+
+dependencies {
+    // Fabric Loader
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+
+    implementation "net.fabricmc:fabric-loader:${loader_version}"
+
+    // Fabric API
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    // JCEF API
+    include(implementation("me.friwi:jcef-api:${jcef_api_version}"))
+
+    // JCEF Maven
+    include(implementation("me.friwi:jcefmaven:${jcef_version}"))
+
+    testmodImplementation sourceSets.main.output
+    testmodAnnotationProcessor sourceSets.main.output
+
+    // ModMenu (可选依赖，仅编译时需要，运行时由玩家安装的 ModMenu 提供)
+    compileOnly "com.terraformersmc:modmenu:20.0.0-beta.4"
+
+    // JCEF Windows x64 natives（仅用于构建"免下载版"full jar，不进入运行时 classpath）
+    jcefNatives "me.friwi:jcef-natives-windows-amd64:${jcef_api_version}@jar"
+}
+
+/**
+ * 从 jcef-natives-windows-amd64 jar 提取里面的 .tar.gz 归档到 build/jcef-natives/jcef-natives.tar.gz
+ * jcefmaven 的 install() 下载的就是这个 jar，里面只有一个 .tar.gz entry（~150MB）。
+ * 运行时 NativesExtractor 会从 mod jar 的 natives/ 目录读取并解压它。
+ */
+tasks.register('extractJcefNatives') {
+    def outputDir = layout.buildDirectory.dir("jcef-natives")
+    inputs.files configurations.jcefNatives
+    outputs.file outputDir.map { it.file("jcef-natives.tar.gz") }
+    doLast {
+        def out = outputDir.get().asFile
+        out.mkdirs()
+        def nativesJar = configurations.jcefNatives.singleFile
+        logger.lifecycle("Extracting JCEF natives tarball from {}", nativesJar.name)
+        def zipIn = new java.util.zip.ZipInputStream(nativesJar.newInputStream())
+        try {
+            java.util.zip.ZipEntry entry
+            while ((entry = zipIn.getNextEntry()) != null) {
+                if (entry.name.endsWith(".tar.gz")) {
+                    def targetFile = new File(out, "jcef-natives.tar.gz")
+                    targetFile.withOutputStream { fos ->
+                        byte[] buf = new byte[65536]
+                        int n
+                        while ((n = zipIn.read(buf)) > 0) {
+                            fos.write(buf, 0, n)
+                        }
+                    }
+                    logger.lifecycle("Extracted {} ({} bytes) -> {}", entry.name, targetFile.length(), targetFile)
+                    break
+                }
+            }
+        } finally {
+            zipIn.close()
+        }
+    }
+}
+
+/**
+ * 构建"免下载版" jar：在原 remapJar 基础上额外打包 natives/jcef-natives.tar.gz。
+ * 输出 build/libs/htmlui-<version>-full.jar（约 150MB+）。
+ * 玩家安装此 jar 后，首次启动时 NativesExtractor 会从 jar 内解压 natives 到 config/mcef-modern/jcef/，
+ * 无需联网下载。普通版（remapJar）仍走 jcefmaven 在线下载流程。
+ *
+ * 用 afterEvaluate 延迟配置，确保 loom 的 remapJar task 已注册。
+ */
+tasks.register('fullJar', Jar) {
+    archiveFileName = "htmlui-${mod_version}-full.jar"
+    destinationDirectory = layout.buildDirectory.dir("libs")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+afterEvaluate {
+    // loom 1.17 没有 remapJar task，jar task 直接输出 remapped jar
+    tasks.named('fullJar') {
+        dependsOn 'jar', 'extractJcefNatives'
+        from(zipTree(tasks.getByName('jar').archiveFile.get().asFile))
+        from(tasks.getByName('extractJcefNatives').outputs.files.singleFile) {
+            into "natives"
+        }
+    }
+    tasks.named('build') {
+        dependsOn 'fullJar'
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "fabric_version", fabric_version
+    inputs.property "minecraft_version", minecraft_version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": inputs.properties.version,
+                "fabric_version": inputs.properties.fabric_version,
+                "minecraft_version": inputs.properties.minecraft_version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+}
+
+java {
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
+
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+    inputs.property "archivesName", project.base.archivesName
+
+    from("LICENSE") {
+        rename { "${it}_${inputs.properties.archivesName}" }
+    }
+}
+
+// configure the maven publication
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
+            from components.java
+        }
+    }
+
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+    repositories {
+        String mavenToken = System.getenv("MAVEN_TOKEN")
+        if (mavenToken) {
+            maven {
+                name "dimaskama"
+                url "https://maven.dimaskama.net/releases"
+                credentials {
+                    username 'main-write'
+                    password mavenToken
+                }
+            }
+        }
+    }
+}
+
+def modrinthToken = System.getenv("MODRINTH_TOKEN")
+if (modrinthToken) {
+    modrinth {
+        token = modrinthToken
+        projectId = "mcef-modern"
+        versionNumber = project.version
+        versionType = "release" // This is the default -- can also be `beta` or `alpha`
+        changelog = file('changelog.md').text
+        uploadFile = jar
+        additionalFiles = [sourcesJar]
+        gameVersions = [minecraft_version] // Must be an array, even with only one version
+        dependencies { // A special DSL for creating dependencies
+            // scope.type
+            // The scope can be `required`, `optional`, `incompatible`, or `embedded`
+            // The type can either be `project` or `version`
+            required.project "fabric-api"
+        }
+    }
+}

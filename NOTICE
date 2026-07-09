@@ -1,0 +1,87 @@
+HTML UI (MCEF Modern 魔改版)
+版权声明与第三方著作权归属
+========================================
+
+本项目基于 MCEF Modern (https://github.com/DimasKama/mcef-modern)
+进行二次开发与功能扩展，遵循 LGPL-2.1 协议。
+
+----------------------------------------
+1. 本项目著作权归属
+----------------------------------------
+
+  Copyright (c) 2026 逸致slom (Yizhi Slom)
+
+  本项目对原始 MCEF Modern 代码库进行的所有修改、新增功能、
+  UI 重构、文档及配置文件享有著作权，并以 LGPL-2.1 协议开源。
+
+  主要新增/修改内容：
+  - HTML UI 服务端系统 (com.htmlui.server.*)
+  - JCEF 渲染集成与 Vulkan 后端适配 (com.htmlui.client.webview.*)
+  - 客户端配置界面与 ModMenu 集成 (com.htmlui.client.config.*)
+  - 国内镜像下载器与免下载版 natives 打包机制
+  - 下载进度监控 HUD
+  - 离线包下载渠道界面
+  - 渲染分辨率等级系统
+  - URL 协议处理 (cmd / page / action / close / refresh)
+  - ActionHandler 扩展框架
+  - 各类文档、示例页面、演示素材
+
+----------------------------------------
+2. 上游著作权归属（保留，LGPL-2.1 要求）
+----------------------------------------
+
+  MCEF Modern 原始项目：
+    Copyright (c) DimasKama
+    源码：https://github.com/DimasKama/mcef-modern
+    协议：GNU LGPL-2.1
+
+  MCEF Modern 自身基于以下项目演进：
+    - CinemaMod Group 重写版本
+    - montoyo 最初创建的 MCEF
+
+  以下包/目录中的代码源自上游 MCEF Modern，
+  著作权归原作者所有，按 LGPL-2.1 协议授权使用：
+    - net.dimaskama.mcef.api.*        (MCEF API 接口)
+    - net.dimaskama.mcef.impl.*       (MCEF 实现，含本项目魔改)
+    - org.cef.browser.*               (CEF 浏览器扩展)
+    - src/testmod/*                   (测试模组)
+    - assets/mcef-modern/icon.png     (模组图标)
+
+----------------------------------------
+3. 依赖项著作权
+----------------------------------------
+
+  本项目依赖以下第三方库，各自遵循其原始协议：
+
+  - JCEF (Java Chromium Embedded Framework) — BSD 协议
+    Copyright (c) The Chromium Embedded Framework Authors
+  - jcefmaven — MIT 协议
+    Copyright (c) friwi
+  - Fabric API — Apache 2.0 协议
+    Copyright (c) FabricMC
+  - ModMenu — MIT 协议
+    Copyright (c) Prospector
+  - JNA (Java Native Access) — Apache 2.0 / LGPL-2.1 双协议
+    Copyright (c) JNA Contributors
+
+----------------------------------------
+4. 协议说明
+----------------------------------------
+
+  本项目整体以 GNU LGPL-2.1 协议开源。
+  完整协议文本见 LICENSE 文件。
+
+  按 LGPL-2.1 第 2 条要求：
+  - 修改过的文件已标注修改说明
+  - 衍生作品须继续以 LGPL-2.1 协议开源
+  - 必须保留本 NOTICE 中的原作者著作权声明
+
+  如需将本项目代码用于非 LGPL 兼容场景，
+  请联系上游原作者获取额外授权。
+
+----------------------------------------
+5. 联系方式
+----------------------------------------
+
+  本项目维护者：逸致slom
+  GitHub: https://github.com/逸致slom/html-ui
